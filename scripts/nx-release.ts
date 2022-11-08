@@ -17,12 +17,32 @@ function hideFromGitIndex(uncommittedFiles: string[]) {
     );
 }
 
+interface VersionOptions {
+  forcePublish: boolean;
+  preid: string;
+  createRelease: string;
+  conventionalPrerelease: boolean;
+  yes: boolean;
+  message: string;
+  tagVersionPrefix: string;
+  gitTagVersion: boolean;
+  loglevel: string;
+  bump: string;
+  exact: boolean;
+  conventionalCommits: boolean;
+  gitRemote: string;
+  noChangelog: boolean;
+  noPrivate?: boolean;
+
+  ignore?: string;
+}
+
 (async () => {
   const options = parseArgs();
   if (!options.local && !options.force) {
     console.log('Authenticating to NPM');
     execSync('npm adduser', {
-      stdio: [0, 1, 2],
+      stdio: [0, 1, 2]
     });
   }
 
@@ -33,10 +53,10 @@ function hideFromGitIndex(uncommittedFiles: string[]) {
   const buildCommand = 'yarn build';
   console.log(`> ${buildCommand}`);
   execSync(buildCommand, {
-    stdio: [0, 1, 2],
+    stdio: [0, 1, 2]
   });
 
-  const versionOptions = {
+  const versionOptions: VersionOptions = {
     bump: options.version ? options.version : undefined,
     conventionalCommits: true,
     conventionalPrerelease: options.tag === 'next',
@@ -50,7 +70,7 @@ function hideFromGitIndex(uncommittedFiles: string[]) {
     gitTagVersion: options.tag !== 'next',
     message: 'chore(misc): publish %v',
     loglevel: options.loglevel ?? 'info',
-    yes: false,
+    yes: false
   };
 
   if (options.local) {
@@ -86,8 +106,17 @@ function hideFromGitIndex(uncommittedFiles: string[]) {
 
   const publishOptions: Record<string, boolean | string | undefined> = {
     gitReset: false,
-    distTag: options.tag,
+    distTag: options.tag
   };
+
+  if (options.local) {
+    const privateProjects = ['vite'];
+    for (const proj of privateProjects) {
+      const packageJsonPath = join(__dirname, '../build/packages', proj);
+      const original = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
+      writeFileSync(packageJsonPath, JSON.stringify({ ...original, private: false }));
+    }
+  }
 
   if (!options.skipPublish) {
     await publish({ ...versionOptions, ...publishOptions });
@@ -113,51 +142,51 @@ function parseArgs() {
     )
     .option('skipPublish', {
       type: 'boolean',
-      description: 'Skips the actual publishing for testing out versioning',
+      description: 'Skips the actual publishing for testing out versioning'
     })
     .option('clearLocalRegistry', {
       type: 'boolean',
       description:
         'Clear existing versions in the local registry so that you can republish the same version',
-      default: true,
+      default: true
     })
     .option('local', {
       type: 'boolean',
       description: 'Publish Nx locally, not to actual NPM',
       alias: 'l',
-      default: true,
+      default: true
     })
     .option('force', {
       type: 'boolean',
-      description: "Don't use this unless you really know what it does",
-      hidden: true,
+      description: 'Don\'t use this unless you really know what it does',
+      hidden: true
     })
     .positional('version', {
       type: 'string',
       description:
-        'The version to publish. This does not need to be passed and can be inferred.',
+        'The version to publish. This does not need to be passed and can be inferred.'
     })
     .option('gitRemote', {
       type: 'string',
       description:
         'Alternate git remote name to publish tags to (useful for testing changelog)',
-      default: 'origin',
+      default: 'origin'
     })
     .option('tag', {
       type: 'string',
       description: 'NPM Tag',
-      choices: ['next', 'latest', 'previous'],
+      choices: ['next', 'latest', 'previous']
     })
     .option('preid', {
       type: 'string',
       description: 'The kind of prerelease tag. (1.0.0-[preid].0)',
       choices: ['alpha', 'beta', 'rc'],
-      default: 'beta',
+      default: 'beta'
     })
     .option('loglevel', {
       type: 'string',
       description: 'Log Level',
-      choices: ['error', 'info', 'debug'],
+      choices: ['error', 'info', 'debug']
     })
     .example(
       '$0',
